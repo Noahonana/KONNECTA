@@ -1,9 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KONNECTA - Connectez le monde</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;background:#f1f4f9;color:#17233b}
@@ -18,54 +20,178 @@ h2{margin:15px 0}
 .card{background:white;padding:18px 12px;border-radius:14px;box-shadow:0 2px 9px #0001}
 .card b{display:block;margin-bottom:8px;color:#174b88}
 .card p{font-size:13px;color:#59677c;line-height:1.4}
-button{border:0;background:#1765bd;color:white;padding:12px 18px;border-radius:9px;margin-top:15px;font-weight:bold}
+button{border:0;background:#1765bd;color:white;padding:12px 18px;border-radius:9px;margin-top:15px;font-weight:bold;cursor:pointer;width:100%}
+.auth{background:white;padding:20px;border-radius:16px;margin-top:20px;box-shadow:0 2px 9px #0001}
+.auth input{width:100%;padding:12px;margin-top:10px;border:1px solid #ccc;border-radius:9px;font-size:15px}
+#status{margin-top:14px;font-size:13px;line-height:1.5;font-weight:bold}
+.ok{color:green}.err{color:red}
 footer{text-align:center;padding:25px;color:#718096;font-size:12px}
-.notice{margin-top:18px;background:#fff4d7;padding:12px;border-radius:10px;font-size:12px;color:#755719}
 </style>
 </head>
 <body>
+
 <header>
 <h1>KONNECTA</h1>
 <p>Connectez le monde, rapprochez les personnes.</p>
 </header>
+
 <main>
 <section class="welcome">
 <h2>Bienvenue sur KONNECTA</h2>
 <p>Une plateforme pour communiquer, partager et organiser vos finances collectives et personnelles.</p>
-<button onclick="alert('Bienvenue dans KONNECTA !')">Commencer</button>
+<button onclick="document.getElementById('authBox').scrollIntoView({behavior:'smooth'})">
+Créer mon compte
+</button>
+</section>
+
+<section id="authBox" class="auth">
+<h2>Inscription des utilisateurs</h2>
+
+<input type="text" id="firstname" placeholder="Ton prénom">
+<input type="text" id="lastname" placeholder="Ton nom">
+<input type="email" id="email" placeholder="Ton adresse e-mail">
+<input type="password" id="password" placeholder="Mot de passe (8 caractères minimum)">
+
+<button onclick="signUp()">Créer mon compte</button>
+
+<h2>Déjà inscrit ?</h2>
+<input type="email" id="loginEmail" placeholder="Ton adresse e-mail">
+<input type="password" id="loginPassword" placeholder="Ton mot de passe">
+
+<button onclick="signIn()" style="background:#10254a">
+Me connecter
+</button>
+
+<button onclick="signOut()" style="background:#718096">
+Me déconnecter
+</button>
+
+<p id="status">Connexion au service KONNECTA...</p>
 </section>
 
 <h2>Nos services</h2>
+
 <section class="grid">
-<div class="card">
-<b>💬 Messagerie</b>
-<p>Messages, photos et conversations privées.</p>
-</div>
-<div class="card">
-<b>📞 Appels</b>
-<p>Communication vocale et vidéo.</p>
-</div>
-<div class="card">
-<b>🌍 Réseau social</b>
-<p>Publications, amis et communautés.</p>
-</div>
-<div class="card">
-<b>👥 Coffres collectifs</b>
-<p>Groupes, cotisations et gestion collective.</p>
-</div>
-<div class="card">
-<b>🔐 Coffre personnel</b>
-<p>Espace privé pour gérer son épargne.</p>
-</div>
-<div class="card">
-<b>💳 Paiements</b>
-<p>Services de paiement selon les pays disponibles.</p>
-</div>
+<div class="card"><b>💬 Messagerie</b><p>Messages, photos et conversations privées.</p></div>
+<div class="card"><b>📞 Appels</b><p>Communication vocale et vidéo.</p></div>
+<div class="card"><b>🌍 Réseau social</b><p>Publications, amis et communautés.</p></div>
+<div class="card"><b>👥 Coffres collectifs</b><p>Groupes, cotisations et gestion collective.</p></div>
+<div class="card"><b>🔐 Coffre personnel</b><p>Espace privé pour gérer son épargne.</p></div>
+<div class="card"><b>💳 Paiements</b><p>Services de paiement selon les pays disponibles.</p></div>
 </section>
-<div class="notice">
-Version initiale de démonstration. Les comptes, messages, appels et opérations financières nécessiteront une infrastructure sécurisée et des intégrations réelles.
-</div>
 </main>
+
 <footer>© 2026 KONNECTA — Connectez le monde</footer>
+
+<script>
+const SUPABASE_URL = "https://iyfwmnnvfapkmvfydlzq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_NOydz4Ws-dKMu3_yz8BgJw_GamLui55";
+
+const supabaseClient = window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_KEY
+);
+
+const statusEl = document.getElementById("status");
+
+function showStatus(message, error=false){
+statusEl.textContent = message;
+statusEl.className = error ? "err" : "ok";
+}
+
+async function checkUser(){
+const {data,error} = await supabaseClient.auth.getUser();
+
+if(error){
+showStatus("Impossible de vérifier la session.",true);
+return;
+}
+
+if(data.user){
+showStatus("Bienvenue sur KONNECTA, "+data.user.email);
+}else{
+showStatus("KONNECTA est prêt. Tu peux créer ton compte.");
+}
+}
+
+async function signUp(){
+const firstname = document.getElementById("firstname").value.trim();
+const lastname = document.getElementById("lastname").value.trim();
+const email = document.getElementById("email").value.trim();
+const password = document.getElementById("password").value;
+
+if(!firstname || !lastname || !email || !password){
+showStatus("Remplis tous les champs avant de continuer.",true);
+return;
+}
+
+if(password.length < 8){
+showStatus("Le mot de passe doit contenir au moins 8 caractères.",true);
+return;
+}
+
+showStatus("Création de ton compte en cours...");
+
+const {data,error} = await supabaseClient.auth.signUp({
+email:email,
+password:password,
+options:{
+data:{
+first_name:firstname,
+last_name:lastname
+}
+}
+});
+
+if(error){
+showStatus(error.message,true);
+return;
+}
+
+if(data.session){
+showStatus("Compte créé ! Bienvenue sur KONNECTA.");
+}else{
+showStatus("Compte créé ! Vérifie ton adresse e-mail pour confirmer ton inscription.");
+}
+}
+
+async function signIn(){
+const email = document.getElementById("loginEmail").value.trim();
+const password = document.getElementById("loginPassword").value;
+
+if(!email || !password){
+showStatus("Entre ton adresse e-mail et ton mot de passe.",true);
+return;
+}
+
+showStatus("Connexion en cours...");
+
+const {data,error} = await supabaseClient.auth.signInWithPassword({
+email:email,
+password:password
+});
+
+if(error){
+showStatus(error.message,true);
+return;
+}
+
+showStatus("Bienvenue sur KONNECTA, "+data.user.email+" !");
+}
+
+async function signOut(){
+const {error} = await supabaseClient.auth.signOut();
+
+if(error){
+showStatus(error.message,true);
+return;
+}
+
+showStatus("Tu es déconnecté de KONNECTA.");
+}
+
+checkUser();
+</script>
+
 </body>
 </html>
